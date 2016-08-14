@@ -1,0 +1,64 @@
+Project Name: Predictive analysis and geolocation mining of taxi data in New York City.
+
+Instructions :
+
+---------------------------------------- CLEAN DATA ----------------------------------------------
+
+Step 1: Download and clean data(remove irrelevant fields in Excel).
+
+Step 2: Reverse Geocoding (converting latitude and longitude to neighborhood)
+	
+	For this, compile files in folder 'clean_data'. Before compiling, place the file 'train.csv' in a folder & set the appropriate path of file 'train.csv' in StubMapper.java.	
+
+  	javac -classpath `hadoop classpath` -d . StubDriver.java StubMapper.java StubReducer.java Pincode_to_Area.java
+  	jar -cvf Project.jar *.class
+ 
+	Run the jar, 'Project.jar' on the dataset('inp' should contain the dataset in HDFS and 'out' is the output folder) 
+  	hadoop jar Project.jar StubDriver inp out
+  
+  Do the above steps for both yellow and green taxi data. Assuming 'final_yout' and 'final_gout' are the output folders for
+  yellow and green data respectively.  
+
+  
+---------------------------------------- ETL & PROFILING ----------------------------------------
+
+Step 3: Running Hive jobs 
+
+	hive> create external table yinp(S_No string, Date_Time_of_pickup string, Area string, Trip_Distance float, Tip_Amount float, Total_Amount float, Payment_Type int)
+	hive> row format delimited fields terminated by ','
+	hive> location '/user/cloudera/final_yout/';
+
+	hive> create external table ginp(S_No string, Date_Time_of_pickup string, Area string, Trip_Distance float, Tip_Amount float, Total_Amount float, Payment_Type int)
+	hive> row format delimited fields terminated by ','
+	hive> location '/user/cloudera/final_gout/';
+
+        // create tables for respective analysis(1-5)
+	hive> create table a1y row format delimited fields terminated by ',' as select yinp.area,yinp.tip_amount, yinp.total_amount from yinp;
+	hive> create table a1g row format delimited fields terminated by ',' as select ginp.area,ginp.tip_amount, ginp.total_amount from ginp;
+
+	hive> create table a2y row format delimited fields terminated by ',' as select yinp.area,yinp.date_time_of_pickup from yinp;
+	hive> create table a2g row format delimited fields terminated by ',' as select ginp.area,ginp.date_time_of_pickup from ginp;
+
+        hive> create table a3y row format delimited fields terminated by ',' as select yinp.area,yinp.total_amount from yinp;
+	hive> create table a3g row format delimited fields terminated by ',' as select ginp.area,ginp.total_amount from ginp;
+
+	hive> create table a4y row format delimited fields terminated by ',' as select yinp.trip_distance,yinp.payment_type from yinp;
+	hive> create table a4g row format delimited fields terminated by ',' as select ginp.trip_distance,ginp.payment_type from ginp;
+	
+	hive> create table a5y row format delimited fields terminated by ',' as select yinp.date_time_of_pickup,yinp.trip_distance from yinp;
+	hive> create table a5g row format delimited fields terminated by ',' as select ginp.date_time_of_pickup,ginp.trip_distance from ginp;
+
+Step 4: Combine(append) the 3 files made for each of the tables (eg a1y, a5g etc.) and load them in HDFS for the 5 analysis
+Assuming a1y_inp(HDFS input for analytic 1 for yellow dataset), a2y_inp, a4g_inp(HDFS input for analytic 4 for green dataset) etc. are the names of Input for the respective analytic code
+
+
+---------------------------------------- RUNNING ANALYTICS ----------------------------------------
+
+Step 5: Run the different Analytics
+
+	Code for different analytics are in the folders a1-a5. Compile and run them for the yellow and green taxi dataset.
+	For example, to run the analytic 5 on yellow dataset, the following steps may be required 
+		javac -classpath `hadoop classpath` -d . StubDriver.java StubMapper.java StubReducer.java
+		jar -cvf a5.jar *.class
+		hadoop jar a5.jar StubDriver a5y_inp a5y_out
+
